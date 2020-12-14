@@ -42,11 +42,14 @@ Follow my journey from Network Engineer to Penetration Tester
   1.3.2 - Online Resources
     There are a number of websites that can and will help you along the way here are some of my frequented
     Beginning - 
+    
       - OverTheWire Bandit
       - hackthissite.org
       - tryhackme
       - hacker101
+    
     Advanced - 
+    
        - VulnHub
        - HacktheBox
        - OverTheWire Natas/Narnia/Leviathan/
