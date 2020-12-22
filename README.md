@@ -41,8 +41,10 @@ Follow my journey from Network Engineer to Penetration Tester
   
   1.3.2 - Online Resources
     There are a number of websites that can and will help you along the way here are some of my frequented
-    Beginning - 
     
+    
+    Beginning - 
+      - The Cyber Mentor
       - OverTheWire Bandit
       - hackthissite.org
       - tryhackme
@@ -52,7 +54,9 @@ Follow my journey from Network Engineer to Penetration Tester
     
        - VulnHub
        - HacktheBox
-       - OverTheWire Natas/Narnia/Leviathan/
+       - OverTheWire Natas/Narnia/Leviathan
+       
+   I will do write ups eventually on OverTheWire exercises and talk about using Python and automating the labs.
        
     *** Keep your eye out for free online Capture The Flag competitions to practice against other people ***
     
@@ -68,4 +72,14 @@ Follow my journey from Network Engineer to Penetration Tester
           - Hacker101
           - HackTheBox
           
+ Things I plan on Learning:
+ 
+ 2.1 Languages
+   - Ruby (editing/creating Metasploit modules)
+   - PHP (PHP Injection//Cookies)
+   - Python (advancing my overall knowledge)
+   - Javascript (XSS//Cookies)
+   - PowerShell (Advancing my knowledge of AD interworkings for Windows Privelege Escalation, AD Dumping, SID Dumping/searching)
+
+
 More to come, I will put the scripts that I develop over time in this repository and update the sources that I find for knowledge into this ReadMe.
