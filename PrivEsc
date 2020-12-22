@@ -1,0 +1,18 @@
+After obtaining a low level shell, There's a few paths you can take to escalate your priveleges. You can:
+  - Enumerate services that may help you
+  - Enumerate permissions on files like /etc/shadow (readable/writable)
+  - Look at other people's shells
+  - Look at environment variables
+  - Look at the cronjobs (readable/writable)
+  - SUID / SGID (Set User ID / Set Group ID executables)
+  - Look at the command history for other users
+  - Configuration Files/ssh keys for other users
+  - Mount an NFS share on your attacking machine and run an elf payload (Root squashing on the share disabled)
+  - Look for vulnerabilities in the Kernel (last resort)
+  
+There are several tools at your disposal to find privelege escalation:
+  - LinEnum.sh
+  - linpeas.sh
+  - lse.sh
+  
+ More to come...
