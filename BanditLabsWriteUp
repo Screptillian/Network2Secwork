@@ -1,0 +1,211 @@
+Bandit.labs.overthewire.org
+
+Level 0:
+
+The goal of this level is for you to log into the game using SSH. The host to which you need to connect is bandit.labs.overthewire.org, on port 2220. The username is bandit0 and the password is bandit0. Once logged in, go to the Level 1 page to find out how to beat Level 1.
+
+ssh -l bandit0 bandit.labs.overthewire.org -p 2220
+
+ls -l
+
+cat readme
+
+Level 1:
+
+The password for the next level is stored in a file called - located in the home directory
+
+ls -l
+
+cat ./-
+
+Level 2:
+
+The password for the next level is stored in a file called spaces in this filename located in the home directory
+
+cat "spaces in this filename"
+
+Level 3:
+
+The password for the next level is stored in a hidden file in the inhere directory.
+
+ls -lha ./inhere/
+
+cat ./inhere/.hidden
+
+Level 4:
+
+The password for the next level is stored in the only human-readable file in the inhere directory. Tip: if your terminal is messed up, try the “reset” command.
+
+file ./inhere/*
+
+cat ./inhere/$filename
+
+Level 5:
+
+The password for the next level is stored in a file somewhere under the inhere directory and has all of the following properties:
+
+    human-readable
+    1033 bytes in size
+    not executable
+
+find ./inhere/ -type f ! -executable -size 1033c
+
+Alternatively you could recursively cat the files and hunt for the key that way
+
+Level 6:
+
+The password for the next level is stored somewhere on the server and has all of the following properties:
+
+    owned by user bandit7
+    owned by group bandit6
+    33 bytes in size
+
+find / -user bandit7 -group bandit6 -size 33c 2>/dev/null
+
+2>/dev/null : I used this at the end because we are searching the root directory and all sub-directories and you will run into permission errors. 2>/dev/null writes only the matching result to the screen.
+
+Level 7:
+
+The password for the next level is stored in the file data.txt next to the word millionth
+
+strings data.txt | grep millionth
+
+we use strings because it writes every string in the file to the screen, accompanied with grep to find the instance of millionth that our password is stored next to will get you the flag
+
+Level 8:
+
+The password for the next level is stored in the file data.txt and is the only line of text that occurs only once
+
+cat data.txt | sort | uniq -u
+
+Why cat data.txt | uniq -u doesn't work: the uniq command reads the inserted line and compares it to the last line that it receives, because each line in that file is different it will be the same as cat data.txt so we first have to sort it.
+
+Level 9:
+
+The password for the next level is stored in the file data.txt in one of the few human-readable strings, preceded by several ‘=’ characters.
+
+ls -l
+
+strings data.txt | grep =
+
+why cat data.txt | grep = doesn't work: It's a binary file, when we use strings it searches that file for... you guessed it, strings. Well Screptillian in programming a string can be anything with quotes.?
+strings according to the man page defines a string as a printable character sequence that is at least 4 characters long AND followed by an unprintable character.
+
+Level 10:
+
+The password for the next level is stored in the file data.txt, which contains base64 encoded data
+
+cat data.txt | base64 -d
+
+Level 11:
+
+The password for the next level is stored in the file data.txt, where all lowercase (a-z) and uppercase (A-Z) letters have been rotated by 13 positions
+
+First, calculate the 13th letter in the alphabet (Not like in Python arrays where the first object is 0). In this case it's the letter 'M'.
+
+The tr command is used to translate, squeeze, or delete text from standard input. Note: Translate
+
+We need to translate the data in data.txt 13 places to get the key for the next level.
+
+cat data.txt | tr [A-Za-z] [A-MN-Za-mn-z]
+
+tr anatomy: tr [CHARACTERSET1] [CHARACTERSET2]
+                Translate to  Translate From
+                
+All this command does is rotates the data 13 places forward (A->M)
+
+Level 12:
+
+The password for the next level is stored in the file data.txt, which is a hexdump of a file that has been repeatedly compressed. For this level it may be useful to create a directory under /tmp in which you can work using mkdir. For example: mkdir /tmp/myname123. Then copy the datafile using cp, and rename it using mv (read the manpages!)
+
+Like this says: Read the man pages!
+
+Because we don't have write permissions in the normal user directory first things first is we have to create a directory that we can write to.
+
+mkdir /tmp/$WhateverYouWant
+
+and now in order to work out of that directory we have to have something to work on in it
+
+cp data.txt /tmp/$WhateverYouMade
+
+cd /tmp/$WhateverYouMade
+
+Throughout this exercise you're going to be using the file command a lot
+
+file data.txt
+
+If we look at the file (cat data.txt) we will see that this is a hexdump, there's a few ways that we can convert it into anything else if we had admin rights on the machine but we don't.
+
+So we have to use what is given/allowed to us.
+
+The command they have given us to do this is xxd
+
+If we do a quick xxd --help:
+
+We see that we have an option to go from hex to binary (-r)
+
+Let's try that
+
+xxd -r data.txt $desiredname
+
+We have to make sure that the command went through and there's nothing fishy because this determines our next step(s)
+
+file $desiredname
+
+From this it will tell us what file it has been turned into and what it previously was before it was turned to hex
+
+We see that this file was originally a gzip file, so let's make it a gzip file
+
+mv $desiredname $desiredname.gz
+
+Here's a cheatsheet:
+
+     gzip = gzip -d
+     bzip2 = bzip2 -d
+     POSIX tar archive = tar -xvf
+     
+You're going to be using mv and file multiple times so be sure to know how to use them in this exercise. And if you get stuck, use some of that google-fu.
+
+cat data8
+
+Level 13:
+
+The password for the next level is stored in /etc/bandit_pass/bandit14 and can only be read by user bandit14. For this level, you don’t get the next password, but you get a private SSH key that can be used to log into the next level. Note: localhost is a hostname that refers to the machine you are working on
+
+So instead of a key that we've gotten in the past 12 levels, instead we get an ssh key which is for all intensive purposes the same thing. The only difference is now we're using connection settings switches instead of file/input/text based commands
+
+ssh -i sshkey.private -l bandit14 localhost
+
+This will get you to Level 14.
+
+Level 14:
+
+The password for the next level can be retrieved by submitting the password of the current level to port 30000 on localhost
+
+If you remember, Level 13 gave us some information about a file that can only be read by bandit14, that holds our password for this user and we can go ahead and read that.
+
+Level 14 talks about submitting the password of this level (Bandit14) to port 30000 of localhost (this machine)
+
+For this we utilize a tool called: netcat (nc)
+
+First we need to read this users password.
+
+cat /etc/bandit_pass/bandit14
+
+Next we need to initiate a connection to the localhost using netcat.
+
+nc localhost 30000
+
+But why is there no colon? Because netcat's syntax is: nc $destinationIP $destinationPort
+
+I did that but there's nothing.
+
+That's because you have to submit the password. Paste the password into that blank space and press enter and you'll get the password to the next level.
+
+Level 15:
+
+The password for the next level can be retrieved by submitting the password of the current level to port 30001 on localhost using SSL encryption.
+
+Helpful note: Getting “HEARTBEATING” and “Read R BLOCK”? Use -ign_eof and read the “CONNECTED COMMANDS” section in the manpage. Next to ‘R’ and ‘Q’, the ‘B’ command also works in this version of that command…
+
+*** More to Come ***
